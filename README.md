@@ -1,2 +1,2 @@
 # airbnb-listing
-Listing of places to rent / sleep in
+Listing of places to see price per night and location
