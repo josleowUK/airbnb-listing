@@ -169,9 +169,9 @@
 			border-color: #cc8899
 		}
 
-		.yellow.map-label-content,
-		.yellow.map-label-arrow {
-			border-color: #eace09
+		.orange.map-label-content,
+		.orange.map-label-arrow {
+			border-color: #ffa500
 		}
 
 		.blue.map-label-content,
@@ -304,8 +304,16 @@
 		var placeLayer = $.getJSON("data/clean-list.geojson", function (data) {
 			//	console.log(data)
 			var listLayer = L.geoJson(data, {
+				pointToLayer: function (feature, latlng) {
+					//console.log(feature, latlng)
+					return L.circleMarker([latlng.lng, latlng.lat], {
+						weight: 0,
+						stroke: 0.5,
+						fillOpacity: 0.6,
+						radius: 10
+					})
+				},
 				style: function (feature) {
-
 					return {
 						color: '#444',
 						weight: 2,
@@ -352,7 +360,7 @@
 		var symbolColor = {
 			"North Region": "red",
 			"North-East Region": "purple",
-			"Central Region": "yellow",
+			"Central Region": "orange",
 			"West Region": "blue",
 			"East Region": "green"
 
@@ -365,12 +373,10 @@
 			listLayer.eachLayer(function (layer) {
 				var props = layer.feature.properties
 				//console.log(props)
-				//console.log(props.price, " - ", breaks)
 
-				//---> why not function setstyle?
-				// layer.setStyle({
-				// 	fillColor: getColor(props.price, breaks)
-				// })
+				layer.setStyle({
+					fillColor: getColor(props.price, breaks)
+				})
 
 
 
@@ -387,15 +393,6 @@
 					}
 				}
 
-				//test
-				// var mcg = new L.markerClusterGroup({
-				// 	chunkedLoading: true,
-				// 	spiderfyOnMaxZoom: false
-				// });
-
-				// var marker = L.marker(geometry.coordinates, { icon: icon })
-				// marker.bindPopup(popupContent)
-				// mcg.addLayer(marker)
 
 				var geometry = layer.feature.geometry
 
@@ -455,17 +452,17 @@
 				var div = L.DomUtil.create('div', 'legend');
 
 
-				// div.innerHTML = `<h3>Price Per Night</h3>`;
+				div.innerHTML = `<h3>Price Per Night</h3>`;
 
-				// 	for (var i = 0; i < breaks.length; i++) {
-				// 		var color = getColor(breaks[i][0], breaks);
+				for (var i = 0; i < breaks.length; i++) {
+					var color = getColor(breaks[i][0], breaks);
 
-				// 		div.innerHTML +=
-				// 			`<span style="background:${color}"></span>
-				//     <label>$${(breaks[i][0] * 1).toLocaleString()} &mdash;
-				//    $${(breaks[i][1] * 1).toLocaleString()}</label>`;
-				// 	}
-				div.innerHTML = `<h3>Region Legend</h3>`;
+					div.innerHTML +=
+						`<span style="background:${color}"></span>
+				    <label>$${(breaks[i][0] * 1).toLocaleString()} &mdash;
+				   $${(breaks[i][1] * 1).toLocaleString()}</label>`;
+				}
+				div.innerHTML += `<br><h3>Region Legend</h3>`;
 				for (x in symbolColor) {
 					var color = symbolColor[x];
 
@@ -486,13 +483,13 @@
 		function getColor(d, breaks) {
 			// console.log(d, breaks)//OK
 			if (d <= breaks[0][1]) {
-				return '#feb24c'
+				return '#808000'
 			} else if (d <= breaks[1][1]) {
 				return '#7fcdbb'
 			} else if (d <= breaks[2][1]) {
-				return '#c51b8a'
+				return '#FF69B4'
 			} else if (d <= breaks[3][1]) {
-				return '#f03b20'
+				return '#EE4B2B'
 			}
 
 		}
