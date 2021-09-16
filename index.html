@@ -226,19 +226,19 @@
 		}
 
 		.leaflet-top .leaflet-control {
-			margin-top: 70px;
+			/* margin-top: 70px; */
 		}
 	</style>
 </head>
 
 <body>
 
-	<h1>"Airbnb" in Singapore</h1>
+
 
 	<div id='map'></div>
 
 	<section id="about">
-		<h2>Find price for place</h2>
+		<h2>"Airbnb" in Singapore</h2>
 		<p>Simple listing of place markers to show price, name, neighbourhood</p>
 		<p>Data Source: <a href="http://insideairbnb.com/get-the-data.html">http://insideairbnb.com/get-the-data.html</a> </p>
 		<p>Map authored by Josephine</p>
@@ -246,10 +246,12 @@
 
 
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-	<script>$ = jQuery</script>
-
 	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
-	<!-- Load a Leaflet plugin to provide geolocation if user shares their location with browser. -->
+	<link rel="stylesheet" href="markercluster/dist/MarkerCluster.css" />
+	<link rel="stylesheet" href="markercluster/dist/MarkerCluster.Default.css" />
+	<script src="markercluster/dist/leaflet.markercluster.js"></script>
+
+
 	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8"></script>
 	<script src="https://unpkg.com/simple-statistics@7.6.0/dist/simple-statistics.min.js"></script>
 
@@ -292,10 +294,18 @@
 
 		map.addLayer(tiles);
 
+		var commonStyles = {
+			weight: 1,
+			stroke: 0,
+			fillOpacity: 1,
+			width: 1,
+			radius: 10
+		}
 		var placeLayer = $.getJSON("data/clean-list.geojson", function (data) {
 			//	console.log(data)
 			var listLayer = L.geoJson(data, {
 				style: function (feature) {
+
 					return {
 						color: '#444',
 						weight: 2,
@@ -307,18 +317,21 @@
 					return feature
 				}
 			})
+
+
+
 			listLayer.addTo(map)
 			drawMap(listLayer)
 		})
 
-		//Boundary lines show up - so slow or sometimes not show up. Without drawMap, it shows boundary lines. 
+		//Boundary lines show up - so slow or sometimes not show up. ? Without drawMap, it shows boundary lines. 
 		$.when(placeLayer).done(function () {
 			$.getJSON("data/clean-neighbourhood.geojson", function (data) {
 				var boundaryLayer = L.geoJson(data, {
 					style: function (feature) {
 						return {
-							color: '#222',
-							weight: 2,
+							color: '#000',
+							weight: 1,
 							fillOpacity: 0,
 							interactive: false
 						};
@@ -346,10 +359,13 @@
 		}
 		function drawMap(listLayer) {
 			var breaks = getClassBreaks(listLayer)
+
 			//draw map with attribute data
+			// console.log("layer", listLayer)
 			listLayer.eachLayer(function (layer) {
 				var props = layer.feature.properties
 				//console.log(props)
+				//console.log(props.price, " - ", breaks)
 
 				//---> why not function setstyle?
 				// layer.setStyle({
@@ -358,7 +374,7 @@
 
 
 
-				var popupContent = `${props.name}<br>Neighbourhood area: ${props.neighbourhood}<br>Minimum Nights: ${props.minimum_nights}<br><b>Price: ${props.price} per night</b>`
+				var popupContent = `${props.name}<br>Neighbourhood area: ${props.neighbourhood}<br>Minimum Nights: ${props.minimum_nights}<br>Price: <b>$${props.price} </b> per night`
 
 				for (let i in symbolColor) {
 					// match region to append color for marker in regions
@@ -371,12 +387,22 @@
 					}
 				}
 
+				//test
+				// var mcg = new L.markerClusterGroup({
+				// 	chunkedLoading: true,
+				// 	spiderfyOnMaxZoom: false
+				// });
+
+				// var marker = L.marker(geometry.coordinates, { icon: icon })
+				// marker.bindPopup(popupContent)
+				// mcg.addLayer(marker)
+
 				var geometry = layer.feature.geometry
-				//	L.marker(geometry.coordinates).addTo(map);
+
 				L.marker(geometry.coordinates, { icon: icon })
 					.bindPopup(popupContent)
 					.addTo(map)
-
+				// map.addLayer(mcg)
 
 				if (L.Browser.mobile) {
 					// if true use popup
@@ -429,15 +455,23 @@
 				var div = L.DomUtil.create('div', 'legend');
 
 
-				div.innerHTML = `<h3>Price Per Night</h3>`;
+				// div.innerHTML = `<h3>Price Per Night</h3>`;
 
-				for (var i = 0; i < breaks.length; i++) {
-					var color = getColor(breaks[i][0], breaks);
+				// 	for (var i = 0; i < breaks.length; i++) {
+				// 		var color = getColor(breaks[i][0], breaks);
+
+				// 		div.innerHTML +=
+				// 			`<span style="background:${color}"></span>
+				//     <label>$${(breaks[i][0] * 1).toLocaleString()} &mdash;
+				//    $${(breaks[i][1] * 1).toLocaleString()}</label>`;
+				// 	}
+				div.innerHTML = `<h3>Region Legend</h3>`;
+				for (x in symbolColor) {
+					var color = symbolColor[x];
 
 					div.innerHTML +=
 						`<span style="background:${color}"></span>
-                <label>$${(breaks[i][0] * 1).toLocaleString()} &mdash;
-               $${(breaks[i][1] * 1).toLocaleString()}</label>`;
+				    <label>${x.toLocaleString()} </label>`;
 				}
 
 				// return the populated div to be added to the map
@@ -450,7 +484,7 @@
 
 		//append color to the map legend
 		function getColor(d, breaks) {
-			//console.log(d, breaks)
+			// console.log(d, breaks)//OK
 			if (d <= breaks[0][1]) {
 				return '#feb24c'
 			} else if (d <= breaks[1][1]) {
@@ -462,6 +496,7 @@
 			}
 
 		}
+
 
 	</script>
 
