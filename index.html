@@ -183,6 +183,51 @@
 		.green.map-label-arrow {
 			border-color: #007F00
 		}
+
+		.legend {
+			padding: 6px 8px;
+			font-size: 1em;
+			/* Use transparency to blend elements. */
+			border: 2px solid rgba(244, 244, 244, 0.2);
+			background: rgba(100, 100, 100, 0.9);
+			color: rgba(244, 244, 244, 0.8);
+			border-radius: 5px;
+		}
+
+		.legend h3 {
+			font-size: 1.1em;
+			font-weight: bolder;
+			color: #ddd;
+			/* Light */
+			margin: 0 0 10px 0;
+		}
+
+		.leaflet-bar a {
+			/* Override the default style for Leaflet's zoom  */
+			background: rgba(100, 100, 100, 0.9);
+			color: rgba(244, 244, 244, 0.8);
+		}
+
+		.legend span {
+			width: 20px;
+			height: 20px;
+			float: left;
+			margin: 0 10px 4px 0;
+		}
+
+		.legend label {
+			font-size: 1.1em;
+		}
+
+		.legend label:after {
+			content: '';
+			display: block;
+			clear: both;
+		}
+
+		.leaflet-top .leaflet-control {
+			margin-top: 70px;
+		}
 	</style>
 </head>
 
@@ -206,7 +251,7 @@
 	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
 	<!-- Load a Leaflet plugin to provide geolocation if user shares their location with browser. -->
 	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8"></script>
-	<script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
+	<script src="https://unpkg.com/simple-statistics@7.6.0/dist/simple-statistics.min.js"></script>
 
 	<script>
 		var options = {
@@ -300,12 +345,18 @@
 
 		}
 		function drawMap(listLayer) {
-
+			var breaks = getClassBreaks(listLayer)
 			//draw map with attribute data
 			listLayer.eachLayer(function (layer) {
 				var props = layer.feature.properties
 				//console.log(props)
-				var geometry = layer.feature.geometry
+
+				//---> why not function setstyle?
+				// layer.setStyle({
+				// 	fillColor: getColor(props.price, breaks)
+				// })
+
+
 
 				var popupContent = `${props.name}<br>Neighbourhood area: ${props.neighbourhood}<br>Minimum Nights: ${props.minimum_nights}<br><b>Price: ${props.price} per night</b>`
 
@@ -320,7 +371,8 @@
 					}
 				}
 
-				//	L.marker(geometry.coordinates).addTo(map); //reference marker - checking position
+				var geometry = layer.feature.geometry
+				//	L.marker(geometry.coordinates).addTo(map);
 				L.marker(geometry.coordinates, { icon: icon })
 					.bindPopup(popupContent)
 					.addTo(map)
@@ -337,9 +389,79 @@
 				};
 
 			})
-
+			drawLegend(breaks)
 		} // end drawMap() function
 
+
+
+		function getClassBreaks(listLayer) {
+			var values = []
+			listLayer.eachLayer(function (layer) {
+				//shorthand reference to properties
+				var props = layer.feature.properties
+				var costNight = props.price
+				//console.log(typeof (costNight))
+				//push value to array
+				if (costNight != null) {
+					values.push(Number(costNight))
+				}
+
+			})
+			var clusters = ss.ckmeans(values, 4)
+			//console.log(clusters)
+			//create array of lowest value within each clusters
+			var breaks = clusters.map(function (cluster) {
+
+				return [cluster[0], cluster.pop()]
+			})
+			//return array of class breaks
+			return breaks;
+
+		}//end getClassBreaks function
+
+		function drawLegend(breaks) {
+			//console.log('breaks ', breaks)
+			// create a new Leaflet control object, and position it top left
+			var legend = L.control({ position: 'topleft' });
+			legend.onAdd = function () {
+
+				// create a new HTML <div> element and give it a class name of "legend"
+				var div = L.DomUtil.create('div', 'legend');
+
+
+				div.innerHTML = `<h3>Price Per Night</h3>`;
+
+				for (var i = 0; i < breaks.length; i++) {
+					var color = getColor(breaks[i][0], breaks);
+
+					div.innerHTML +=
+						`<span style="background:${color}"></span>
+                <label>$${(breaks[i][0] * 1).toLocaleString()} &mdash;
+               $${(breaks[i][1] * 1).toLocaleString()}</label>`;
+				}
+
+				// return the populated div to be added to the map
+				return div;
+			};
+
+			// add the legend to the map
+			legend.addTo(map);
+		}
+
+		//append color to the map legend
+		function getColor(d, breaks) {
+			//console.log(d, breaks)
+			if (d <= breaks[0][1]) {
+				return '#feb24c'
+			} else if (d <= breaks[1][1]) {
+				return '#7fcdbb'
+			} else if (d <= breaks[2][1]) {
+				return '#c51b8a'
+			} else if (d <= breaks[3][1]) {
+				return '#f03b20'
+			}
+
+		}
 
 	</script>
 
