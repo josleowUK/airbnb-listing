@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset=utf-8 />
+	<title>Find a place? Or price? Come to search here! 'Airbnb' Listing</title>
+	<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+	<link rel='icon' href='https://newmapsplus.github.io/favicon.ico' type='image/x-icon' />
+
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+
+	<link href="https://fonts.googleapis.com/css?family=Quicksand:400,700" rel="stylesheet">
+
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			font-family: 'Quicksand', sans-serif;
+			font-size: 100%;
+			color: #3d3d3d;
+		}
+
+		h1 {
+			position: absolute;
+			margin-top: 0;
+			top: 10px;
+			left: 15px;
+			font-size: 1.5em;
+			font-family: 'Quicksand', sans-serif;
+			font-weight: 700;
+			letter-spacing: .04em;
+			padding: 10px 15px;
+			/* Add styles to match Leaflet UI elements */
+			background: rgba(256, 256, 256, .3);
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			z-index: 800;
+		}
+
+		h2 {
+			font-family: 'Quicksand', sans-serif;
+			font-size: 1.2em;
+			letter-spacing: .04em;
+
+		}
+
+		#map {
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			width: 100%;
+		}
+
+		#about {
+			position: absolute;
+			bottom: 20px;
+			left: 15px;
+			width: 280px;
+			padding: 0 15px;
+			/* Add styles to match Leaflet UI elements */
+			background: rgba(256, 256, 256, .3);
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			z-index: 800;
+		}
+
+		p {
+			font-size: .9em;
+			line-height: 1.5em;
+		}
+
+		a {
+			color: #005daa;
+			text-decoration: none;
+		}
+
+		a:hover {
+			text-decoration: underline;
+		}
+
+		/* Leaflet popup styles */
+		.leaflet-popup-content {
+			font-family: 'Quicksand', sans-serif;
+			font-size: 1.1em;
+		}
+
+		/* 
+		When browser is 900px high or less
+		make the font a little smaller.
+		 */
+		@media screen and (max-height: 400px) {
+
+			#about p,
+			#about h2 {
+				font-size: .6em;
+			}
+
+			h1 {
+				font-size: 1.2em;
+			}
+
+			#about h2 {
+				font-size: 1em;
+			}
+
+			.leaflet-popup-content {
+				font-family: 'Quicksand', sans-serif;
+				font-size: 0.9em;
+			}
+		}
+
+		/* Don't display info block when window is very small */
+		@media screen and (max-height: 200px) {
+
+			#about {
+				display: none;
+			}
+		}
+
+		/*Wraperclass for the divicon*/
+		.map-label {
+			position: absolute;
+			bottom: 0;
+			left: -50%;
+			display: flex;
+			flex-direction: column;
+			text-align: center;
+		}
+
+		/*Wrap the content of the divicon (text) in this class*/
+		.map-label-content {
+			order: 1;
+			position: relative;
+			left: -50%;
+			background-color: #fff;
+			border-radius: 5px;
+			border-width: 2px;
+			border-style: solid;
+			border-color: #444;
+			padding: 3px;
+			white-space: nowrap;
+		}
+
+		/*Add this arrow*/
+		.map-label-arrow {
+			order: 2;
+			width: 0px;
+			height: 0px;
+			left: 50%;
+			border-style: solid;
+			border-color: #444 transparent transparent transparent;
+			border-width: 10px 6px 0 6px;
+			/*[first number is height, second/fourth are rigth/left width]*/
+			margin-left: -6px;
+		}
+
+		/* Set  color for each region */
+		.red.map-label-content,
+		.red.map-label-arrow {
+			border-color: red
+		}
+
+		.purple.map-label-content,
+		.purple.map-label-arrow {
+			border-color: #cc8899
+		}
+
+		.orange.map-label-content,
+		.orange.map-label-arrow {
+			border-color: #ffa500
+		}
+
+		.blue.map-label-content,
+		.blue.map-label-arrow {
+			border-color: #003366
+		}
+
+		.green.map-label-content,
+		.green.map-label-arrow {
+			border-color: #007F00
+		}
+
+		.legend {
+			padding: 6px 8px;
+			font-size: 1em;
+			/* Use transparency to blend elements. */
+			border: 2px solid rgba(244, 244, 244, 0.2);
+			background: rgba(100, 100, 100, 0.9);
+			color: rgba(244, 244, 244, 0.8);
+			border-radius: 5px;
+		}
+
+		.legend h3 {
+			font-size: 1.1em;
+			font-weight: bolder;
+			color: #ddd;
+			/* Light */
+			margin: 0 0 10px 0;
+		}
+
+		.leaflet-bar a {
+			/* Override the default style for Leaflet's zoom  */
+			background: rgba(100, 100, 100, 0.9);
+			color: rgba(244, 244, 244, 0.8);
+		}
+
+		.legend span {
+			width: 20px;
+			height: 20px;
+			float: left;
+			margin: 0 10px 4px 0;
+		}
+
+		.legend label {
+			font-size: 1.1em;
+		}
+
+		.legend label:after {
+			content: '';
+			display: block;
+			clear: both;
+		}
+
+		.leaflet-top .leaflet-control {
+			/* margin-top: 70px; */
+		}
+	</style>
+</head>
+
+<body>
+
+
+
+	<div id='map'></div>
+
+	<section id="about">
+		<h2>"Airbnb" in Singapore</h2>
+		<p>Simple listing of place markers to show price, name, neighbourhood</p>
+		<p>Data Source: <a href="http://insideairbnb.com/get-the-data.html">http://insideairbnb.com/get-the-data.html</a> </p>
+		<p>Map authored by Josephine</p>
+	</section>
+
+
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.css" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.css" />
+	<script src="	https://unpkg.com/leaflet.markercluster@1.5.1/dist/leaflet.markercluster-src.js"></script>
+
+
+	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+	<script src="https://unpkg.com/simple-statistics@7.6.0/dist/simple-statistics.min.js"></script>
+
+	<script>
+		var options = {
+			center: [1.369613, 103.797809],
+			zoom: 13,
+			zoomControl: false
+		}
+
+		var locate_options = {
+			position: 'topright',
+			strings: {
+				title: "Show me where I am, yo!"
+			}
+		}
+
+		var map = L.map('map', options);
+
+
+		// add zoom control to top right window position
+		L.control.zoom({
+			position: 'topright'
+		}).addTo(map);
+
+		// add geolocation control to top right window position (Leaflet can handle multiple top-right elements)
+		L.control.locate(locate_options).addTo(map);
+
+		// Get basemap URL from Leaflet Providers
+		var basemap_url = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+
+		// Get basemap attributes from Leaflet Providers
+		var basemap_attributes = {
+			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+			subdomains: 'abcd',
+			maxZoom: 20
+		};
+		// requests some map tiles
+		var tiles = L.tileLayer(basemap_url, basemap_attributes);
+
+		map.addLayer(tiles);
+
+		var commonStyles = {
+			weight: 1,
+			stroke: 0,
+			fillOpacity: 1,
+			width: 1,
+			radius: 10
+		}
+		var markersID = {}
+		var placeLayer = $.getJSON("data/clean-list.geojson", function (data) {
+			//	console.log(data)
+			var listLayer = L.geoJson(data, {
+				pointToLayer: function (feature, latlng) {
+					//console.log(feature, latlng)
+					return L.circleMarker([latlng.lng, latlng.lat], {
+						weight: 0,
+						stroke: 0.5,
+						fillOpacity: 0.6,
+						radius: 10
+					})
+				},
+				style: function (feature) {
+					return {
+						color: '#444',
+						weight: 2,
+						fillOpacity: 1,
+						fillColor: '#1f78b4'
+					}
+				},
+				filter: function (feature) {
+					return feature
+				},
+				onEachFeature: function (feature, layer) {
+
+				}
+			})
+
+			listLayer.addTo(map)
+			drawMap(listLayer)
+		})
+
+		//Boundary lines show up - so slow or sometimes not show up. ? Without drawMap, it shows boundary lines. 
+		$.when(placeLayer).done(function () {
+			$.getJSON("data/clean-neighbourhood.geojson", function (data) {
+				var boundaryLayer = L.geoJson(data, {
+					style: function (feature) {
+						return {
+							color: '#000',
+							weight: 1,
+							fillOpacity: 0,
+							interactive: false
+						};
+					},
+
+					// Filter for the correct state to use
+					filter: function (feature) {
+						return feature
+					}
+				});
+
+				// Add layer to map!
+				boundaryLayer.addTo(map)
+			})
+		})
+
+
+		var symbolColor = {
+			"North Region": "red",
+			"North-East Region": "purple",
+			"Central Region": "orange",
+			"West Region": "blue",
+			"East Region": "green"
+
+		}
+		function drawMap(listLayer) {
+			var breaks = getClassBreaks(listLayer)
+
+			//draw map with attribute data
+			// console.log("layer", listLayer)
+			listLayer.eachLayer(function (layer) {
+				var props = layer.feature.properties
+				//console.log(props)
+
+				layer.setStyle({
+					fillColor: getColor(props.price, breaks)
+				})
+
+
+
+				var popupContent = `${props.name}<br>Neighbourhood area: ${props.neighbourhood}<br>Minimum Nights: ${props.minimum_nights}<br>Price: <b>$${props.price} </b> per night`
+
+				for (let i in symbolColor) {
+					// match region to append color for marker in regions
+					if (i == props.neighbourhood_group) {
+						//console.log(i, props.neighbourhood_group)
+						var icon = L.divIcon({
+							iconSize: null,
+							html: `<div class="map-label"><div class="map-label-content ${symbolColor[i]}"></div><div class="map-label-arrow ${symbolColor[i]}"></div></div>`
+						})
+
+					}
+				}
+				var markers = L.markerClusterGroup();
+
+				var marker = L.marker(new L.LatLng(props.latitude, props.longitude))
+				marker.bindPopup(popupContent)
+				markers.addLayer(marker)
+				map.addLayer(markers)
+
+				var geometry = layer.feature.geometry
+
+				// L.marker(geometry.coordinates, {})
+				// 	.bindPopup(popupContent)
+				// 	.addTo(map)
+
+
+				if (L.Browser.mobile) {
+					// if true use popup
+					layer.bindPopup(popupContent);
+				} else {
+					// if false use tooltip
+					layer.bindTooltip(popupContent, {
+						sticky: true
+					});
+				};
+
+			})
+			drawLegend(breaks)
+		} // end drawMap() function
+
+
+
+		function getClassBreaks(listLayer) {
+			var values = []
+			listLayer.eachLayer(function (layer) {
+				//shorthand reference to properties
+				var props = layer.feature.properties
+				var costNight = props.price
+				//console.log(typeof (costNight))
+				//push value to array
+				if (costNight != null) {
+					values.push(Number(costNight))
+				}
+
+			})
+			var clusters = ss.ckmeans(values, 4)
+			//console.log(clusters)
+			//create array of lowest value within each clusters
+			var breaks = clusters.map(function (cluster) {
+
+				return [cluster[0], cluster.pop()]
+			})
+			//return array of class breaks
+			return breaks;
+
+		}//end getClassBreaks function
+
+		function drawLegend(breaks) {
+			//console.log('breaks ', breaks)
+			// create a new Leaflet control object, and position it top left
+			var legend = L.control({ position: 'topleft' });
+			legend.onAdd = function () {
+
+				// create a new HTML <div> element and give it a class name of "legend"
+				var div = L.DomUtil.create('div', 'legend');
+
+
+				div.innerHTML = `<h3>Price Per Night</h3>`;
+
+				for (var i = 0; i < breaks.length; i++) {
+					var color = getColor(breaks[i][0], breaks);
+
+					div.innerHTML +=
+						`<span style="background:${color}"></span>
+				    <label>$${(breaks[i][0] * 1).toLocaleString()} &mdash;
+				   $${(breaks[i][1] * 1).toLocaleString()}</label>`;
+				}
+				div.innerHTML += `<br><h3>Region Legend</h3>`;
+				for (x in symbolColor) {
+					var color = symbolColor[x];
+
+					div.innerHTML +=
+						`<span style="background:${color}"></span>
+				    <label>${x.toLocaleString()} </label>`;
+				}
+
+				// return the populated div to be added to the map
+				return div;
+			};
+
+			// add the legend to the map
+			legend.addTo(map);
+		}
+
+		//append color to the map legend
+		function getColor(d, breaks) {
+			// console.log(d, breaks)//OK
+			if (d <= breaks[0][1]) {
+				return '#808000'
+			} else if (d <= breaks[1][1]) {
+				return '#7fcdbb'
+			} else if (d <= breaks[2][1]) {
+				return '#FF69B4'
+			} else if (d <= breaks[3][1]) {
+				return '#EE4B2B'
+			}
+
+		}
+
+
+	</script>
+
+</body>
+
+</html>
